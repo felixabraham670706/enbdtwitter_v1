@@ -29,7 +29,7 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USER_AGENT: post_bank/1.0
         run: |
-          python enbdReddit.py
+          python Twitter.py
 
       - name: Commit updated HTML
         run: |
