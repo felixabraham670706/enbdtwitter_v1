@@ -372,7 +372,7 @@ df = pd.concat(
 
 len(df)
 
-df=df.head(25)
+#df=df.head(25)
 # In[30]:
 
 
