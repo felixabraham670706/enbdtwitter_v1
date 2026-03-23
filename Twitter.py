@@ -4,20 +4,7 @@
 # In[1]:
 
 
-
-
-
-# In[2]:
-
-
-#!pip install apify-client pandas
-#fastcrawler/twitter-reply-scraper-0-2-1k-tweets-pay-per-result-2025
-
-
-# In[3]:
-
-
-
+# Customers Mentioning Emirates Islamic (Mentions)
 from apify_client import ApifyClient
 
 from openai import OpenAI
@@ -34,16 +21,23 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-
-# In[4]:
-
-
-
+# In[2]:
 
 try:
     APIFY_TOKEN = st.secrets["APIFY_TOKEN"]
 except Exception:
     APIFY_TOKEN = os.getenv("APIFY_TOKEN")
+
+
+# In[3]:
+
+
+
+
+# In[4]:
+
+
+#client = ApifyClient(APIFY_TOKEN)
 
 
 # In[5]:
@@ -52,29 +46,24 @@ except Exception:
 # Customers Mentioning Emirates Islamic (Mentions)
 
 
-# In[6]:
-
-
-
-
-
 client = ApifyClient(APIFY_TOKEN)
 
-since_date = (datetime.utcnow() - timedelta(days=3)).strftime("%Y-%m-%d")
+since_date = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 query_mentions = f'''
 (
 "Emirates Islamic" OR 
 "Emirates Islamic Bank" OR
 emiratesislamic OR
-@emiratesislamic
+@emiratesislamic 
+
 )
-lang:en since:{since_date}
+since:{since_date}
 '''
 
 run_input_mentions = {
     "query": query_mentions,
-    "maxItems": 100,
+    "maxItems": 1000,
     "mode": "Latest"
 }
 
@@ -88,16 +77,17 @@ df_mentions = pd.DataFrame(mentions)
 print("Mentions:", len(df_mentions))
 
 
-# In[7]:
+# In[6]:
 
 
 # Tweets Posted by the Bank
 
 
-# In[8]:
+# In[7]:
 
 
-query_bank = f'from:emiratesislamic lang:en since:{since_date}'
+# Tweets Posted by the Bank
+query_bank = f'from:emiratesislamic since:{since_date}'
 
 run_input_bank = {
     "query": query_bank,
@@ -115,20 +105,20 @@ df_bank_posts = pd.DataFrame(bank_posts)
 print("Bank posts:", len(df_bank_posts))
 
 
-# In[9]:
+# In[8]:
 
 
 # Replies / Comments to the Bank (Customer Complaints)
 
 
-# In[10]:
+# In[9]:
 
 
-query_replies = f'to:emiratesislamic lang:en since:{since_date}'
+query_replies = f'to:emiratesislamic since:{since_date}'
 
 run_input_replies = {
     "query": query_replies,
-    "maxItems": 100,
+    "maxItems": 1000,
     "mode": "Latest"
 }
 
@@ -142,7 +132,7 @@ df_replies = pd.DataFrame(replies)
 print("Replies:", len(df_replies))
 
 
-# In[11]:
+# In[10]:
 
 
 df_all = pd.concat([df_mentions, df_bank_posts, df_replies], ignore_index=True)
@@ -150,16 +140,28 @@ df_all = pd.concat([df_mentions, df_bank_posts, df_replies], ignore_index=True)
 print("Total posts collected:", len(df_all))
 
 
-# In[12]:
+# In[11]:
 
 
 df_all.to_excel("EI_tweet.xlsx")
 
 
-# In[13]:
+# In[12]:
 
 
 df_all = df_all.drop_duplicates(subset=["id"])
+
+
+# In[ ]:
+
+
+
+
+
+# In[13]:
+
+
+#urls
 
 
 # ## ENBD
@@ -169,39 +171,94 @@ df_all = df_all.drop_duplicates(subset=["id"])
 # In[14]:
 
 
-since_date = (datetime.utcnow() - timedelta(days=3)).strftime("%Y-%m-%d")
+
+
+
+client = ApifyClient(APIFY_TOKEN)
+
+#since_date = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+# In[15]:
+
 
 query_mentions_enbd = f'''
 (
 "Emirates NBD" OR
 ENBD OR
 emiratesnbd OR
-@EmiratesNBD_AE
+@EmiratesNBD_AE OR
+@EmiratesNBD_KSA
 )
-lang:en since:{since_date}
+since:{since_date}
 '''
 
 run_input_mentions = {
     "query": query_mentions_enbd,
-    "maxItems": 100,
+    "maxItems": 1000,
     "mode": "Latest"
 }
 
 run = client.actor("igolaizola/x-twitter-scraper-ppe").call(run_input=run_input_mentions)
 
 mentions_enbd = []
+
 for item in client.dataset(run["defaultDatasetId"]).iterate_items():
     mentions_enbd.append(item)
 
 df_mentions_enbd = pd.DataFrame(mentions_enbd)
 
+print("Mentions:", len(df_mentions_enbd))
+
 
 # # Tweets Posted by Emirates NBD
 
-# In[15]:
+# In[16]:
 
 
-query_bank_enbd = f'from:EmiratesNBD_AE lang:en since:{since_date}'
+query_bank_enbd = f'from:EmiratesNBD_AE since:{since_date}'
+
+run_input_bank = {
+    "query": query_bank_enbd,
+    "maxItems": 200,
+    "mode": "Latest"
+}
+
+run = client.actor("igolaizola/x-twitter-scraper-ppe").call(run_input=run_input_bank)
+
+dataset_id = run["defaultDatasetId"]
+
+
+# In[17]:
+
+
+rows = []
+
+for item in client.dataset(dataset_id).iterate_items():
+
+    rows.append({
+        "tweet_id": item.get("id"),
+        "conversation_id": item.get("conversationId"),
+        "reply_to": item.get("inReplyToStatusId"),
+        "user": item.get("author"),
+        "text": item.get("text"),
+        "date": item.get("createdAt"),
+        "url": item.get("url")
+    })
+
+df = pd.DataFrame(rows)
+
+
+# In[18]:
+
+
+#df
+
+
+# In[19]:
+
+
+query_bank_enbd = f'to:EmiratesNBD_AE since:{since_date}'
 
 run_input_bank = {
     "query": query_bank_enbd,
@@ -220,17 +277,16 @@ df_bank_posts_enbd = pd.DataFrame(bank_posts_enbd)
 
 # # Customer Replies to Emirates NBD
 
-# In[16]:
+# In[20]:
 
 
 query_replies_enbd = f'''
-to:EmiratesNBD_AE
-lang:en since:{since_date}
+to:EmiratesNBD_AE since:{since_date}
 '''
 
 run_input_replies = {
     "query": query_replies_enbd,
-    "maxItems": 100,
+    "maxItems": 500,
     "mode": "Latest"
 }
 
@@ -243,7 +299,7 @@ for item in client.dataset(run["defaultDatasetId"]).iterate_items():
 df_replies_enbd = pd.DataFrame(replies_enbd)
 
 
-# In[17]:
+# In[21]:
 
 
 df_enbd_all = pd.concat(
@@ -252,7 +308,7 @@ df_enbd_all = pd.concat(
 )
 
 
-# In[18]:
+# In[22]:
 
 
 df_enbd_all = df_enbd_all.drop_duplicates(subset=["id"]).reset_index(drop=True)
@@ -260,31 +316,49 @@ df_enbd_all = df_enbd_all.drop_duplicates(subset=["id"]).reset_index(drop=True)
 print("Total ENBD posts:", len(df_enbd_all))
 
 
-# In[19]:
+# In[23]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[24]:
 
 
 df_enbd_all["bank_ext"]="ENBD"
 
 
-# In[20]:
+# In[ ]:
+
+
+
+
+
+# In[25]:
 
 
 df_all["bank_ext"]="EI"
 
 
-# In[21]:
+# In[26]:
 
 
 len(df_enbd_all)
 
 
-# In[22]:
+# In[27]:
 
 
 len(df_all)
 
 
-# In[23]:
+# In[28]:
 
 
 df = pd.concat(
@@ -293,38 +367,264 @@ df = pd.concat(
 )
 
 
-# In[24]:
+# In[29]:
 
 
-df.rename(columns={"likes": "Views"}, inplace=True)
+len(df)
+
+df=df.head(25)
+# In[30]:
 
 
-# In[25]:
+
+#df = df.head(25)
+
+# In[31]:
 
 
-df.rename(columns={"quotes": "likes"}, inplace=True)
+#df.to_excel("check.xlsx",index=0)
 
 
-# In[26]:
+# In[32]:
+
+
+urls = (
+    df["permalink"]
+    .dropna()
+    .unique()
+    .tolist()
+)
+
+print(len(urls))
+print(urls[:5])
+def chunk_list(lst, size=5):
+    for i in range(0, len(lst), size):
+        yield lst[i:i + size]
+
+url_batches = list(chunk_list(urls, 5))
+
+records = []
+
+for batch in url_batches:
+
+    run_input = {
+        "postUrls": batch,
+        "resultsLimit": 20,
+        "includeOriginalPost": True
+    }
+
+    run = client.actor("scraper_one/x-post-replies-scraper").call(run_input=run_input)
+
+    dataset_id = run["defaultDatasetId"]
+
+    for item in client.dataset(dataset_id).iterate_items():
+        records.append(item)
+
+
+EI_ENDB_comments = pd.DataFrame(records)
+print("Mentions:", len(EI_ENDB_comments))
+
+EI_ENDB_comments.to_excel("Xpost_df_comments.xlsx")
+
+
+EI_ENDB_comments["dubai_datetime"] = (
+    pd.to_datetime(EI_ENDB_comments["timestamp"], unit="ms", utc=True)
+    .dt.tz_convert("Asia/Dubai")
+    .dt.tz_localize(None)   # removes timezone
+)
+
+EI_ENDB_comments = EI_ENDB_comments.drop_duplicates(subset=["replyId"])
+
+
+# In[33]:
+
+
+EI_ENDB_comments
+
+
+# In[34]:
+
+
+#EI_ENDB_comments permalink postUrls  replyUrl
+
+
+# In[35]:
+
+
+#df.head(5)
+
+
+# In[36]:
+
+
+df.to_excel("EI_ENBD_3post.xlsx",index=0)
+
+
+# In[37]:
+
+
+#permalink
+EI_ENDB_comments.to_excel("EI_ENDB_comments.xlsx",index=0)
+
+
+# In[38]:
+
+
+comments=EI_ENDB_comments[
+    (EI_ENDB_comments['inReplyTo'].isna()) &
+    (EI_ENDB_comments['inReplyTo'] == '')
+]
+
+
+# In[39]:
+
+
+EI_ENDB_comments_nodup = (
+    EI_ENDB_comments
+    .sort_values(["postUrl", "dubai_datetime"])
+    .drop_duplicates(subset="postUrl", keep="first")
+)
+
+
+# In[40]:
+
+
+len(EI_ENDB_comments_nodup)
+
+
+# In[41]:
+
+
+df['text_1']=df['text']
+
+
+# In[42]:
+
+
+EI_ENDB_comments_x=EI_ENDB_comments_nodup[['postUrl','replyText']]
+
+
+# In[43]:
+
+
+#permalink
+#EI_ENDB_comments_x.to_excel("EI_ENDB_comments_x.xlsx",index=0)
+
+
+# In[44]:
+
+
+df_final = df.merge(
+    EI_ENDB_comments_x,
+    left_on="permalink",
+    right_on="postUrl",
+    how="left"
+)
+
+
+# In[45]:
 
 
 len(df)
 
 
-# In[27]:
+# In[46]:
+
+
+len(df_final)
+
+
+# In[47]:
+
+
+df_final
+
+
+# In[ ]:
+
+
+
+
+
+# In[48]:
+
+
+import numpy as np
+
+df_final["text_v1"] = np.where(
+    df_final["postUrl"].fillna("").str.len() > 5,
+    df_final["replyText"],
+    df_final["text_1"]
+)
+
+
+# In[49]:
+
+
+df_final.to_excel("df_final.xlsx")
+
+
+# In[ ]:
+
+
+
+
+
+# In[50]:
+
+
+df_final['text']=df_final['text_v1']
+
+
+# In[51]:
+
+
+df=df_final
+
+
+# In[ ]:
+
+
+
+
+
+# In[52]:
+
+
+df.rename(columns={"likes": "Views"}, inplace=True)
+
+
+# In[53]:
+
+
+df.rename(columns={"quotes": "likes"}, inplace=True)
+
+
+# In[54]:
+
+
+len(df)
+
+
+# In[55]:
 
 
 df.to_csv("twitter_date_ei5.csv",index=0)
 
 
-# In[28]:
+# In[56]:
 
 
 df=df[df['username'] != 'centralbankuae']
 
 
-# In[29]:
+# In[57]:
 
+
+df.head(1)
+
+
+# In[58]:
 
 
 
@@ -332,13 +632,16 @@ try:
     key = st.secrets["OPENAI_API_KEY"]
 except Exception:
     key = os.getenv("OPENAI_API_KEY")
-# In[30]:
 
 
+# In[59]:
+
+
+#from openai import OpenAI
 client = OpenAI(api_key=key)
 
 
-# In[31]:
+# In[60]:
 
 
 def translate_to_english(text: str) -> str:
@@ -358,31 +661,37 @@ def translate_to_english(text: str) -> str:
     return resp.choices[0].message.content.strip()
 
 
-# In[32]:
+# In[61]:
 
 
 df["post"] = df["text"].astype(str).apply(translate_to_english)
 
 
-# In[33]:
+# In[62]:
 
 
 df_tsrf=df
 
 
-# In[34]:
+# In[63]:
 
 
 raw_dt=df
 
 
-# In[35]:
+# In[64]:
+
+
+#df=raw_dt
+
+
+# In[65]:
 
 
 #df_tsrf.columns
 
 
-# In[36]:
+# In[66]:
 
 
 df_tsrf["posttype"] = df_tsrf["fullname"].str.lower().isin(
@@ -390,7 +699,7 @@ df_tsrf["posttype"] = df_tsrf["fullname"].str.lower().isin(
 ).map({True: "Bank", False: "Cust"})
 
 
-# In[37]:
+# In[67]:
 
 
 #username="author_name"
@@ -403,20 +712,42 @@ df_tsrf["posttype"] = df_tsrf["fullname"].str.lower().isin(
 # 5. Output only ONE word: Positive, Negative, or Neutral.
 # 
 
-# In[38]:
+# In[68]:
 
 
 def analyze_sentiment(text):
     prompt = f"""
-You are analyzing Twitter posts for sentiment specifically about UAE banks.
+You are analyzing X (Twitter) posts about UAE banks.
 
 Banks:
-Emirates NBD (ENBD)
-Emirates Islamic (EI)
+- Emirates NBD (ENBD)
+- Emirates Islamic (EI)
 
-Rules:
-1. Classify sentiment ONLY if the post clearly criticizes or praises the BANK itself.
-2. Output only ONE word: Positive, Negative, or Neutral.
+Classify sentiment about the BANK.
+
+IMPORTANT RULES:
+
+1. If a post shows customer complaint, dissatisfaction, service issue, delay, app error,
+   poor support, fraud concern, or negative experience → classify as Negative.
+
+2. If the bank replies with apology or support phrases such as:
+   "sorry for the inconvenience"
+   "we regret"
+   "not the experience we expect"
+   "please send us details"
+   "our team will contact you"
+   "we will review this"
+   → this indicates the original issue was a customer complaint.
+   → classify as Negative.
+
+3. If the post praises the bank, promotion, benefits, offers, achievements → Positive.
+
+4. If the post only mentions the bank with no opinion → Neutral.
+
+Return ONLY ONE word:
+Positive
+Negative
+Neutral
 
 Post:
 {text}
@@ -431,32 +762,44 @@ Post:
     return response.choices[0].message.content.strip()
 
 
-# In[39]:
+# In[69]:
 
 
 # Apply sentiment analysis
 df_tsrf["Sentiment"] = df_tsrf["post"].apply(analyze_sentiment)
 
 
-# In[40]:
+# In[70]:
 
 
 df_tsrf.rename(columns={"username": "author_name"}, inplace=True)
 
 
-# In[41]:
+# In[71]:
 
 
 df_tsrf_dt=df_tsrf
 
 
-# In[42]:
+# In[72]:
 
 
 df_tsrf_dt.to_csv("sent.csv",index=0)
 
 
-# In[43]:
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[73]:
 
 
 df_tsrf["createdAt"] = pd.to_datetime(df_tsrf["createdAt"], utc=True)
@@ -464,19 +807,49 @@ df_tsrf["createdAt"] = pd.to_datetime(df_tsrf["createdAt"], utc=True)
 df_tsrf["uae_time"] = df_tsrf["createdAt"].dt.tz_convert("Asia/Dubai")
 
 
-# In[44]:
+# In[74]:
 
 
 df_tsrf_dt["ddmmyyyy"] = pd.to_datetime(df_tsrf_dt["uae_time"]).dt.strftime("%d-%m-%Y")
 
 
-# In[45]:
+# In[75]:
+
+
+df_tsrf_dt["uae_time"] = pd.to_datetime(df_tsrf_dt["uae_time"])
+
+
+# In[76]:
+
+
+#df_tsrf_dt
+
+
+# In[77]:
+
+
+final_df_v2=df_tsrf_dt[df_tsrf_dt['ddmmyyyy']>='10-03-2026']
+
+
+# In[78]:
+
+
+final_df_v2['ddmmyyyy']
+
+
+# In[79]:
+
+
+df_tsrf_dt=final_df_v2
+
+
+# In[80]:
 
 
 df_tsrf_dt.to_csv("twiter1.csv",index=0)
 
 
-# In[46]:
+# In[81]:
 
 
 mapping = {
@@ -511,13 +884,19 @@ mapping = {
 
 
 
-# In[47]:
+# In[ ]:
+
+
+
+
+
+# In[82]:
 
 
 df_tsrf_dt["Bank"]=df_tsrf_dt["bank_ext"]
 
 
-# In[48]:
+# In[83]:
 
 
 def classify_bank(banks):
@@ -543,25 +922,25 @@ df_tsrf_dt.loc[
 ] = "EI"
 
 
-# In[49]:
+# In[84]:
 
 
 df_tsrf_dt["Bank_Name"] = df_tsrf_dt["Bank"].map(mapping)
 
 
-# In[50]:
+# In[85]:
 
 
 df_tsrf_dt[['Bank', 'Bank_Name']].value_counts().sort_index()
 
 
-# In[51]:
+# In[86]:
 
 
 import os
 
 
-# In[52]:
+# In[87]:
 
 
 _USE_GENAI = bool(os.getenv(key))
@@ -575,7 +954,7 @@ if _USE_GENAI:
         _client = None
 
 
-# In[53]:
+# In[88]:
 
 
 def genai_highlights(text, max_bullets=3, timeout_s=20):
@@ -634,7 +1013,7 @@ def genai_highlights(text, max_bullets=3, timeout_s=20):
     return [re.sub(r"\s+", " ", s) for s in ranked]
 
 
-# In[54]:
+# In[89]:
 
 
 def _clean_text(t):
@@ -646,7 +1025,13 @@ def _clean_text(t):
     return t[:6000]  # safety
 
 
-# In[55]:
+# In[90]:
+
+
+import re
+
+
+# In[91]:
 
 
 
@@ -655,56 +1040,241 @@ df_tsrf_dt["post_highlights"] = df_tsrf_dt["post"].apply(
 )
 
 
-# In[56]:
+# In[92]:
 
 
 # remove leading 1., 2), 3-, 4: (any digits + optional punctuation) + spaces
 df_tsrf_dt["Name_of_bank"] = df_tsrf_dt["Bank_Name"].str.replace(r"^\s*\d+[\.\)\-:]*\s*", "", regex=True)
 
 
-# In[57]:
+# In[93]:
 
 
 df_tsrf_dt.rename(columns={"posttype": "author_type"}, inplace=True)
 
 
-# In[58]:
+# In[94]:
 
 
 df_tsrf_dt[['Bank', 'Bank_Name','author_type']].value_counts().sort_index()
 
 
-# In[59]:
+# In[95]:
 
 
 df_tsrf_dt['Bank_Name'].value_counts()
 
 
-# In[60]:
+# In[96]:
 
 
 df_tsrf_dt['Name_of_bank'].value_counts()
 
 
-# In[61]:
+# In[97]:
 
 
-df_tsrf_dt.loc[(df_tsrf_dt["Sentiment"] == "Negative") & (df_tsrf_dt["author_type"] == "Bank"), "Sentiment"] = "Positive"
+#df_tsrf_dt.loc[(df_tsrf_dt["Sentiment"] == "Negative") & (df_tsrf_dt["author_type"] == "Bank"), "Sentiment"] = "Positive"
 
 
-# In[62]:
+# In[98]:
 
 
 from datetime import datetime, timedelta
 
 
-# In[63]:
+# In[99]:
 
 
 df1=df_tsrf_dt
 
 
-# In[64]:
+# In[100]:
+
+
+df1.columns
+
+
+# In[101]:
+
+
+df1["year"] = pd.to_datetime(df1["ddmmyyyy"], format="%d-%m-%Y").dt.year
+
+
+# In[102]:
+
+
+df2=df1[df1["year"]>=2026]
+
+
+# In[ ]:
+
+
+
+
+
+# In[103]:
+
+
+df2["replyingTo_clean"] = df2["replyingTo"].astype(str).str.replace(r"[\[\]']", "", regex=True)
+
+
+# In[104]:
+
+
+# CHNAGE COMMENT AND BANK CHANGE TO - cust -- MAY BE WILL NOT GET GET POST WE HAVE COMMENTS
+# REMOVE DUPLICATE POST
+
+
+# In[105]:
+
+
+neg=df2[df2['Sentiment']=='Negative']
+neg_none=df2[df2['Sentiment']!='Negative']
+
+
+# In[106]:
+
+
+len(neg_none)
+
+
+# In[107]:
+
+
+banks = [
+    'EmiratesNBD_AE',
+    'EmiratesNBD_EGY',
+    'EmiratesNBD_KSA',
+    'emiratesislamic'
+]
+
+neg_customer = neg[~neg['author_name'].isin(banks)]
+neg_bank = neg[neg['author_name'].isin(banks)]
+
+
+# In[108]:
+
+
+authors = neg_customer[["author_name"]].drop_duplicates()
+
+
+# In[109]:
+
+
+
+
+
+# In[110]:
+
+
+neg_bank_filtered = neg_bank[
+    ~neg_bank["replyingTo_clean"].isin(authors["author_name"])
+]
+
+
+# In[111]:
+
+
+
+
+
+# In[112]:
+
+
+df_final = pd.concat([neg_customer, neg_bank_filtered], ignore_index=True)
+
+
+# In[113]:
+
+
+
+
+
+# In[114]:
+
+
+df_final2 = (
+    df_final
+    .sort_values(["author_name", "uae_time"], ascending=[True, True])
+    .drop_duplicates(subset="author_name", keep="first")
+)
+
+
+# In[115]:
+
+
+df2 = pd.concat([neg_none, df_final2], ignore_index=True)
+
+
+# In[116]:
+
+
+len(neg_none)
+
+
+# In[117]:
+
+
+len(df_final2)
+
+
+# In[118]:
+
+
+len(df2)
+
+
+# In[119]:
+
+
+df2.loc[
+    (df2["author_type"] == "Bank") & (df2["replyingTo_clean"]!="None"),
+    "author_type"
+] = "Cust"
+
+
+# In[120]:
+
+
+for col in df2.columns:
+    if pd.api.types.is_datetime64tz_dtype(df2[col]):
+        df2[col] = df2[col].dt.tz_localize(None)
+
+df2.to_excel("check2.xlsx")
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[121]:
+
+
+df1=df2
+
+
+# In[122]:
 
 
 summary = (
@@ -743,7 +1313,13 @@ summary = (
 )
 
 
-# In[65]:
+# In[123]:
+
+
+
+
+
+# In[124]:
 
 
 post_from_dates = summary["min_post_date"].dropna().unique()
@@ -751,25 +1327,37 @@ post_to_dates = summary["max_post_date"].dropna().unique()
 print(f"\n X post Analysis from {post_from_dates[0]} to {post_to_dates[0]}")
 
 
-# In[66]:
+# In[125]:
 
 
 df1['post_date']=df1["uae_time"]
 
 
-# In[67]:
+# In[126]:
 
 
 df1["weekday_name"] = df1["post_date"].dt.day_name()
 
 
-# In[68]:
+# In[127]:
+
+
+#fatihtahta/reddit-scraper-search-fast
+
+
+# In[128]:
 
 
 bank_df=df1[df1['author_type']=='Bank']
 
 
-# In[69]:
+# In[129]:
+
+
+#bank_df
+
+
+# In[130]:
 
 
 weekday_bank_counts = bank_df.groupby(
@@ -777,38 +1365,38 @@ weekday_bank_counts = bank_df.groupby(
 ).size().reset_index(name="post_count")
 
 
-# In[70]:
+# In[131]:
 
 
-weekday_bank_counts
 
 
-# In[71]:
+
+# In[132]:
 
 
 ######html
 import datetime
 
 
-# In[72]:
+# In[133]:
 
 
 today_date = datetime.datetime.today().strftime("%d%b%Y").upper()
 
 
-# In[73]:
+# In[134]:
 
 
 base_name="X-post_analysis"
 
 
-# In[74]:
+# In[135]:
 
 
 OUT_PATH = f"{base_name}.html"
 
 
-# In[75]:
+# In[136]:
 
 
 # ------------------------------
@@ -832,19 +1420,19 @@ def esc(x):
     return str(x)
 
 
-# In[76]:
+# In[137]:
 
 
 df = df1.copy()
 
 
-# In[77]:
+# In[138]:
 
 
 df['Sentiment']=df['Sentiment'].str.lower()
 
 
-# In[78]:
+# In[139]:
 
 
 # ensure types
@@ -853,54 +1441,51 @@ for c in ["likes", "comments", "retweets"]:
     df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
 
 
-# In[79]:
+# In[140]:
 
 
 # split masks
 is_bank_authored = df["author_type"].str.startswith("Bank", na=False)
 
 
-# In[80]:
+# In[141]:
 
 
 # Sort first by Bank_Name then likes descending
 df = df.sort_values(['Bank_Name', 'likes'], ascending=[True, False])
 
 
-# In[81]:
+# In[142]:
 
 
 def rank_top3(d):
     # sort by engagement desc, then most recent date
-    return d.sort_values(["likes", "post_date"], ascending=[False, False]).head(10)
+    return d.sort_values(["likes", "post_date"], ascending=[False, False]).head(5)
 
 
-# In[82]:
+# In[143]:
 
 
 # per-bank top 3
 top3_bank_authored = (
-    df.loc[is_bank_authored]
-    .sort_values(["Bank_Name", "likes", "post_date"], ascending=[True, False, False])
-    .groupby("Bank_Name")
-    .head(10)
-    .reset_index(drop=True)
+    df[is_bank_authored]
+    .groupby("Bank_Name", group_keys=False)
+    .apply(rank_top3)
 )
 
 
-# In[83]:
+# In[144]:
+
 
 
 top3_customer_authored = (
-    df.loc[~is_bank_authored]
-    .sort_values(["Bank_Name", "likes", "post_date"], ascending=[True, False, False])
-    .groupby("Bank_Name")
-    .head(10)
-    .reset_index(drop=True)
+    df[~is_bank_authored]
+    .groupby("Bank_Name", group_keys=False)
+    .apply(rank_top3)
 )
 
 
-# In[84]:
+# In[145]:
 
 
 # (optional) merge both into one dict for rendering
@@ -912,19 +1497,26 @@ for bank in sorted(df["Bank_Name"].dropna().astype(str).unique()):
     }
 
 
-# In[85]:
+# In[146]:
 
 
 neg_table=df1[(df1['Sentiment'] == 'Negative')]
 
 
-# In[86]:
+# In[147]:
+
+
+#neg_table.head()
+len(neg_table)
+
+
+# In[148]:
 
 
 df1.to_csv("twitt.csv",index=0)
 
 
-# In[87]:
+# In[149]:
 
 
 # ============================================
@@ -939,8 +1531,13 @@ df1.to_csv("twitt.csv",index=0)
 # ============================================
 
 
+from io import BytesIO
+import base64
+import matplotlib.pyplot as plt
+import html
 
-# In[88]:
+
+# In[150]:
 
 
 # ---------- helpers ----------
@@ -980,7 +1577,7 @@ def highlight_text(text):
     return s
 
 
-# In[89]:
+# In[151]:
 
 
 def format_k_m(x):
@@ -996,7 +1593,7 @@ def format_k_m(x):
         return f"{num:,.0f}"
 
 
-# In[90]:
+# In[152]:
 
 
 def render_badge(sent):
@@ -1006,7 +1603,7 @@ def render_badge(sent):
     return '<span class="badge badge-neu">Neutral</span>'
 
 
-# In[91]:
+# In[153]:
 
 
 # ---------- validations & inputs ----------
@@ -1019,7 +1616,7 @@ def must_have(df, name):
     return obj
 
 
-# In[92]:
+# In[154]:
 
 
 summary_df = must_have(summary, "summary")
@@ -1028,13 +1625,13 @@ bank3     = must_have(top3_bank_authored, "top3_bank_authored")
 cust3     = must_have(top3_customer_authored, "top3_customer_authored")
 
 
-# In[93]:
+# In[155]:
 
 
-summary_df
 
 
-# In[94]:
+
+# In[156]:
 
 
 
@@ -1071,13 +1668,13 @@ part1_cols = {
 
 
 
-# In[95]:
+# In[157]:
 
 
-part1_cols
 
 
-# In[96]:
+
+# In[158]:
 
 
 missing = [k for k in part1_cols.keys() if k not in summary_df.columns]
@@ -1086,19 +1683,18 @@ if missing:
 summary_tbl = summary_df[list(part1_cols.keys())].rename(columns=part1_cols)
 
 
-# In[97]:
+# In[159]:
 
 
-summary_tbl
 
 
-# In[98]:
+# In[160]:
 
 
 #summary_df
 
 
-# In[99]:
+# In[161]:
 
 
 
@@ -1124,7 +1720,7 @@ part2_cols = {
 }
 
 
-# In[100]:
+# In[162]:
 
 
 missing = [k for k in part1_cols.keys() if k not in summary_df.columns]
@@ -1133,13 +1729,13 @@ if missing:
 summary_tbl_2 = summary_df[list(part2_cols.keys())].rename(columns=part2_cols)
 
 
-# In[101]:
+# In[163]:
 
 
-summary_tbl_2
 
 
-# In[102]:
+
+# In[164]:
 
 
 # Sort weekdays in natural order (Mon–Sun)
@@ -1149,11 +1745,12 @@ weekday_bank_counts["weekday"] = pd.Categorical(weekday_bank_counts["weekday_nam
 pivot_df = weekday_bank_counts.pivot(index="weekday", columns="Name_of_bank", values="post_count").fillna(0)
 
 
-# In[103]:
+# In[165]:
 
 
 # --- Matplotlib static bar chart -> base64 <img> for Outlook ---
-
+import io, base64
+import matplotlib.pyplot as plt
 
 # Optional: ensure weekday order on x-axis if needed
 if 'weekday_order' in globals():
@@ -1231,7 +1828,7 @@ chart_img_html = (
 )
 
 
-# In[104]:
+# In[166]:
 
 
 # (Optional) also save a physical PNG next to the HTML if you want to attach it separately
@@ -1239,7 +1836,7 @@ with open("weekday_bank_posts.png", "wb") as f:
     f.write(base64.b64decode(png_b64))
 
 
-# In[105]:
+# In[167]:
 
 
 # ---------- Part 2 (negative cards from neg_table) ----------
@@ -1252,7 +1849,7 @@ order_cols = ["Bank_Name"] + (["post_date"] if "post_date" in neg_tmp.columns el
 neg_tmp = neg_tmp.sort_values(order_cols, ascending=[True, False] if len(order_cols)>1 else [True])
 
 
-# In[106]:
+# In[168]:
 
 
 # ---------- Part 3 (side-by-side top-3 from top3 tables) ----------
@@ -1262,7 +1859,7 @@ for df_ in (bank3, cust3):
         df_["post_date"] = pd.to_datetime(df_["post_date"], errors="coerce")
 
 
-# In[107]:
+# In[169]:
 
 
 # ---------- CSS ----------
@@ -1488,7 +2085,7 @@ css = """
 """
 
 
-# In[108]:
+# In[170]:
 
 
 def embed_data_url(path):
@@ -1502,7 +2099,7 @@ def embed_data_url(path):
 logo_data_url = embed_data_url("enbd_logo.png")
 
 
-# In[109]:
+# In[171]:
 
 
 header = f"""
@@ -1528,7 +2125,7 @@ header = f"""
 """
 
 
-# In[110]:
+# In[172]:
 
 
 
@@ -1543,7 +2140,13 @@ part1_html = f"""
 """
 
 
-# In[111]:
+# In[173]:
+
+
+
+
+
+# In[174]:
 
 
 # ---------- Part 1 ----------
@@ -1557,7 +2160,7 @@ part11_html = f"""
 """
 
 
-# In[112]:
+# In[175]:
 
 
 # right after you build neg_tmp (and similarly for bank3, cust3 if needed)
@@ -1569,7 +2172,7 @@ for c in ['total_likes_for_Bank_Posts',
         neg_tmp[c] = pd.to_numeric(neg_tmp[c], errors="coerce").fillna(0).astype(int)
 
 
-# In[113]:
+# In[176]:
 
 
 def _as_int(x):
@@ -1583,7 +2186,7 @@ def _as_int(x):
         return 0
 
 
-# In[114]:
+# In[177]:
 
 
 #top3_bank_authored
@@ -1620,7 +2223,18 @@ def row_highlights(row):
     return _split_highlights(bullets)
 
 
-# In[115]:
+# In[ ]:
+
+
+
+
+
+# In[178]:
+
+
+
+
+# In[179]:
 
 
 def render_card(row, variant="normal"):
@@ -1682,7 +2296,7 @@ def render_card(row, variant="normal"):
     """
 
 
-# In[116]:
+# In[180]:
 
 
 def render_card_neg(row, variant="normal"):
@@ -1748,13 +2362,12 @@ def render_card_neg(row, variant="normal"):
     """
 
 
-# In[117]:
+# In[181]:
 
 
-neg_tmp.columns
 
 
-# In[118]:
+# In[182]:
 
 
 neg_tmp = neg_tmp.sort_values(by="Bank_Name", ascending=True)
@@ -1773,7 +2386,7 @@ else:
 part2_html = "\n".join(part2_blocks)
 
 
-# In[119]:
+# In[183]:
 
 
 combined = (
@@ -1785,13 +2398,13 @@ combined = (
 )
 
 
-# In[120]:
+# In[184]:
 
 
 banks=combined['Name_of_bank'].to_list()
 
 
-# In[121]:
+# In[185]:
 
 
 
@@ -1820,7 +2433,7 @@ for bank in banks:
 part3_html = "\n".join(part3_blocks)
 
 
-# In[122]:
+# In[186]:
 
 
 # ---------- Header ----------
@@ -1854,8 +2467,32 @@ with open(OUT_PATH, "w", encoding="utf-8") as f:
     f.write(html_doc)
 
 
-# In[123]:
+# In[187]:
 
 
-#get_ipython().system('jupyter nbconvert --to Twitter.ipynb')
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[188]:
+
+
+#fatihtahta/reddit-scraper-search-fast
 
