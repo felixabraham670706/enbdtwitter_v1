@@ -12,7 +12,7 @@ file_time = os.path.getmtime("twiter1.csv")
 
 dubai = pytz.timezone("Asia/Dubai")
 last_update = datetime.fromtimestamp(file_time, dubai)
-st.write("Last data update:", last_update.strftime("%Y-%m-%d %H:%M:%S"))
+#st.write("Last data update:", last_update.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 #st.title("Emirates NBD Reddit Sentiment Dashboard")

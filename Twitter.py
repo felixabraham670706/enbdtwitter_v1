@@ -1644,7 +1644,8 @@ for c in ["min_post_date","max_post_date"]:
     if c in summary_df.columns:
         summary_df[c] = pd.to_datetime(summary_df[c], errors="coerce")
 
-duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(summary_df['max_post_date'].max())}"
+#duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(summary_df['max_post_date'].max())}"
+duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(datetime.now())}"
 
 # Table (exact columns from summary)
 part1_cols = {
@@ -2115,7 +2116,7 @@ header = f"""
   </div>
 
   <div class="hero-row r2">
-    <p>Duration: {fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(summary_df['max_post_date'].max())}</p>
+    <p>Duration: {fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(datetime.now())}</p>
   </div>
 
   <div class="hero-row r3">
