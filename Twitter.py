@@ -19,6 +19,7 @@ import re
 import streamlit as st
 import os
 from dotenv import load_dotenv
+import pytz
 load_dotenv()
 
 # In[2]:
@@ -1643,9 +1644,10 @@ for c in ["Nbr_followers","totl_nbr_post","post_by_bank","post_by_Customers","co
 for c in ["min_post_date","max_post_date"]:
     if c in summary_df.columns:
         summary_df[c] = pd.to_datetime(summary_df[c], errors="coerce")
-
+current_time = datetime.datetime.now(pytz.timezone("Asia/Dubai"))
 #duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(summary_df['max_post_date'].max())}"
-duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(datetime.datetime.now())}"
+#duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(datetime.datetime.now())}"
+duration_text = f"{fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(current_time)}"
 
 # Table (exact columns from summary)
 part1_cols = {
@@ -2116,7 +2118,7 @@ header = f"""
   </div>
 
   <div class="hero-row r2">
-    <p>Duration: {fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(datetime.datetime.now())}</p>
+    <p>Duration: {fmt_date9(summary_df['min_post_date'].min())} to {fmt_dt_full(current_time)}</p>
   </div>
 
   <div class="hero-row r3">
