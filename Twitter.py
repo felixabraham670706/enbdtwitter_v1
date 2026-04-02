@@ -827,15 +827,15 @@ df_tsrf_dt["uae_time"] = pd.to_datetime(df_tsrf_dt["uae_time"])
 
 
 # In[77]:
-#df_tsrf_dt["ddmmyyyy"] = pd.to_datetime(
- #   df_tsrf_dt["ddmmyyyy"],
-  #  format="%d-%m-%Y"
-#)
-#final_df_v2 = df_tsrf_dt[
-#    df_tsrf_dt["ddmmyyyy"] >= pd.to_datetime("2026-03-19")
-#]
+df_tsrf_dt["ddmmyyyy"] = pd.to_datetime(
+    df_tsrf_dt["ddmmyyyy"],
+    format="%d-%m-%Y"
+)
+final_df_v2 = df_tsrf_dt[
+    df_tsrf_dt["ddmmyyyy"] >= pd.to_datetime("2026-03-19")
+]
 
-final_df_v2=df_tsrf_dt[df_tsrf_dt['ddmmyyyy']>='30-03-2026']
+#final_df_v2=df_tsrf_dt[df_tsrf_dt['ddmmyyyy']>='30-03-2026']
 
 
 
