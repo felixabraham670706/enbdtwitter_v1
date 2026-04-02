@@ -1325,7 +1325,9 @@ summary = (
 
 post_from_dates = summary["min_post_date"].dropna().unique()
 post_to_dates = summary["max_post_date"].dropna().unique()
-print(f"\n X post Analysis from {post_from_dates[0]} to {post_to_dates[0]}")
+if len(post_from_dates) > 0 and len(post_to_dates) > 0:
+    print(f"\n X post Analysis from {post_from_dates[0]} to {post_to_dates[0]}")
+#print(f"\n X post Analysis from {post_from_dates[0]} to {post_to_dates[0]}")
 
 
 # In[125]:
