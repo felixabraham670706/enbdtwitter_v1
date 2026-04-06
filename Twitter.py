@@ -832,7 +832,7 @@ df_tsrf_dt["ddmmyyyy"] = pd.to_datetime(
     format="%d-%m-%Y"
 )
 final_df_v2 = df_tsrf_dt[
-    df_tsrf_dt["ddmmyyyy"] >= pd.to_datetime("2026-04-03")
+    df_tsrf_dt["ddmmyyyy"] >= pd.to_datetime("2026-04-04")
 ]
 
 #final_df_v2=df_tsrf_dt[df_tsrf_dt['ddmmyyyy']>='30-03-2026']
